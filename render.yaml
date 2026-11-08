@@ -1,0 +1,31 @@
+# Render Blueprint for the Express API (free web service).
+# Dashboard: New > Blueprint > pick this repo. Fill the "sync: false" values when prompted.
+services:
+  - type: web
+    name: support-escalation-mesh-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    # --include=dev: TypeScript is a dev dependency and NODE_ENV=production would skip it.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # MongoDB Atlas connection string
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # the Vercel URL of the frontend, e.g. https://support-escalation-mesh.vercel.app
+      - key: LLM_PROVIDER
+        value: fake # switch to "sarvam" once SARVAM_API_KEY is set
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_MODEL
+        value: sarvam-105b
+      - key: REFUND_AGENT_LIMIT_INR
+        value: "2000"

@@ -1,0 +1,28 @@
+# Optional: run the API against a real MongoDB in Docker.
+#   docker compose up --build
+# Then seed:  docker compose exec api node dist/scripts/seed.js
+# The frontend runs separately with `npm --prefix frontend run dev`.
+services:
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports: ["4000:4000"]
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/mesh
+      JWT_SECRET: local-docker-secret-change-me-0123456789abcdef
+      CORS_ORIGIN: http://localhost:5173
+      LLM_PROVIDER: fake
+
+volumes:
+  mongo-data:
