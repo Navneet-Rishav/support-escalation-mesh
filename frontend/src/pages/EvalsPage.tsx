@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '../lib/authContext';
 import { formatInr, formatPct, reasonLabel } from '../lib/format';
 import type { EvalMetrics, EvalRun, Meta } from '../lib/types';
-import { Button, Card, EmptyState, ErrorState, Pill, Spinner, cx } from '../components/ui';
+import { Button, Card, EmptyState, ErrorState, Pill, Spinner } from '../components/ui';
+import { cx } from '../lib/cx';
 
 type MetricKey = keyof EvalMetrics;
 const METRICS: { key: MetricKey; label: string; fmt: (v: number | null) => string; higherIsBetter?: boolean }[] = [

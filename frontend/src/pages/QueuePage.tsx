@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api, errorMessage } from '../lib/api';
 import { formatRelative } from '../lib/format';
 import type { TicketList, TicketStatus } from '../lib/types';
-import { Card, EmptyState, ErrorState, PriorityBadge, SlaBadge, Spinner, StatusBadge, cx, Pill } from '../components/ui';
+import { Card, EmptyState, ErrorState, PriorityBadge, SlaBadge, Spinner, StatusBadge, Pill } from '../components/ui';
+import { cx } from '../lib/cx';
 
 type Tab = { key: string; label: string; status?: TicketStatus; view: 'open' | 'mine' | 'all' };
 

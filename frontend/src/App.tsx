@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth } from './lib/auth';
+import { useAuth } from './lib/authContext';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { LoginPage } from './pages/LoginPage';

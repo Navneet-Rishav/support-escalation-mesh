@@ -1,10 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { formatSla, STATUS_LABEL } from '../lib/format';
 import type { Priority, TicketStatus } from '../lib/types';
-
-export function cx(...classes: (string | false | null | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
+import { cx } from '../lib/cx';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 const VARIANTS: Record<Variant, string> = {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-import { cx } from './ui';
+import { useAuth } from '../lib/authContext';
+import { cx } from '../lib/cx';
 
 const NAV = [
   { to: '/', label: 'Queue', end: true },

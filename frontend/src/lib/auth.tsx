@@ -1,24 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, getToken, setToken, setUnauthorizedHandler } from './api';
-import type { Role, User } from './types';
+import type { User } from './types';
+import { AuthContext, type AuthState } from './authContext';
 
 interface Session {
   token: string;
   user: User;
 }
-
-interface AuthState {
-  user: User | null;
-  /** True while checking a saved token on first load. */
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  demo: (role: Role) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -58,10 +47,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
 }

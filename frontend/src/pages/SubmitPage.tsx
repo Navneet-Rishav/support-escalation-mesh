@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError, errorMessage } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '../lib/authContext';
 import { Button, Card } from '../components/ui';
 
 const EXAMPLES = [

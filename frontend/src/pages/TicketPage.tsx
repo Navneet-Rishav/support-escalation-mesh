@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError, errorMessage } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '../lib/authContext';
 import { formatInr, formatRelative, parseActor, reasonLabel } from '../lib/format';
 import type { AuditEvent, Ticket } from '../lib/types';
-import { Button, Card, ErrorState, Pill, PriorityBadge, SlaBadge, Spinner, StatusBadge, cx } from '../components/ui';
+import { Button, Card, ErrorState, Pill, PriorityBadge, SlaBadge, Spinner, StatusBadge } from '../components/ui';
+import { cx } from '../lib/cx';
 
 interface TicketDetail {
   ticket: Ticket;

@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { errorMessage } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '../lib/authContext';
 import type { Role } from '../lib/types';
-import { Button, cx } from '../components/ui';
+import { Button } from '../components/ui';
+import { cx } from '../lib/cx';
 
 export function LoginPage() {
   const { user, login, register, demo } = useAuth();
