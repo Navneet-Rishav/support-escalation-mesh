@@ -4,7 +4,7 @@
 
 **A MERN + TypeScript support desk.** Customers submit tickets; an Express REST API queues them; AI agents triage each one and draft a reply; **code-level guardrails** decide what the AI may do; and a human agent approves, edits or takes over every ticket in a React console.
 
-> **Live demo:** _deploying soon (Render + Vercel + MongoDB Atlas)._ Click **"Try demo as Agent"** on the login page; no sign-up needed.
+> **Live demo:** _deploying soon (Render + Vercel + MongoDB Atlas; see [docs/DEPLOY.md](docs/DEPLOY.md))._ Click **"Try demo as Agent"** on the login page; no sign-up needed.
 > Run it locally in 3 commands: see [Local setup](#local-setup).
 
 | Agent queue | Ticket review (AI draft + reasoning trail) |
