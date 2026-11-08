@@ -62,11 +62,13 @@ export async function createTicket(input: NewTicketInput) {
   return ticket;
 }
 
-/** Order lookup used by the graph: by order ID if the customer gave one, otherwise their latest order. */
+/**
+ * Order lookup used by the graph. Only an order ID the customer actually gave is used, and it must belong
+ * to the same email. We never guess "their latest order": a refund approved against a guessed order is unsafe.
+ */
 export async function lookupOrderInDb(orderId: string | null | undefined, email: string): Promise<OrderContext | null> {
-  const order = orderId
-    ? await Order.findOne({ orderId: orderId.toUpperCase(), customerEmail: email.toLowerCase() }).lean()
-    : await Order.findOne({ customerEmail: email.toLowerCase() }).sort({ placedAt: -1 }).lean();
+  if (!orderId) return null;
+  const order = await Order.findOne({ orderId: orderId.toUpperCase(), customerEmail: email.toLowerCase() }).lean();
   if (!order) return null;
   return { orderId: order.orderId, amountInr: order.amountInr, status: order.status, items: order.items };
 }
@@ -122,7 +124,6 @@ export async function triageTicket(ticketId: Types.ObjectId, deps: TriageDeps = 
       language: outcome.classification.language,
       priority: outcome.priority,
       slaDueAt: outcome.slaDueAt,
-      orderId: outcome.order?.orderId ?? ticket.orderId,
       failureReason: undefined,
       triage: {
         summary: outcome.classification.summary,

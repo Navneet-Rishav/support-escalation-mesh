@@ -267,3 +267,17 @@ describe('evals API', () => {
     expect(list.body.runs[0]).not.toHaveProperty('results');
   });
 });
+
+describe('order lookup safety', () => {
+  it('never attaches an order the customer did not mention, or one belonging to someone else', async () => {
+    await seedOrder();
+    const noId = await submitAndTriage({ ...refundTicket, body: 'I was charged twice last week, please refund me ₹1,299.' });
+    expect(noId?.orderId).toBeUndefined();
+    expect(noId?.status).toBe('escalated');
+    expect(noId?.triage?.reasons).toContain('refund_without_verified_order');
+
+    const otherCustomer = await submitAndTriage({ ...refundTicket, email: 'someone.else@example.com' });
+    expect(otherCustomer?.status).toBe('escalated');
+    expect(otherCustomer?.triage?.reasons).toContain('refund_without_verified_order');
+  });
+});
