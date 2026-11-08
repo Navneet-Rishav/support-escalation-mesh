@@ -1,0 +1,14 @@
+{
+  "name": "support-escalation-mesh",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "setup": "npm ci && npm --prefix backend ci && npm --prefix frontend ci && node -e \"const fs=require('fs');if(!fs.existsSync('backend/.env'))fs.copyFileSync('backend/.env.example','backend/.env')\"",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "seed": "npm --prefix backend run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}

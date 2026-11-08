@@ -110,7 +110,7 @@ export function EvalsPage() {
                     <td className="px-4 py-2">
                       <span className="font-medium">{r.label}</span>
                       <span className="block text-xs text-slate-500">
-                        {new Date(r.createdAt).toLocaleString()} {r.createdByName && `· ${r.createdByName}`}
+                        {new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} {r.createdByName && `· ${r.createdByName}`}
                       </span>
                     </td>
                     {r.status === 'completed' && r.metrics ? (
