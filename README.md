@@ -127,13 +127,14 @@ The eval set is 30 hand-labelled tickets ([`dataset.ts`](backend/src/evals/datas
 |---|---|---|---|---|---|
 | Fake keyword baseline | v2 | 90% | 85.7% / 100% | 0% | under 30 ms |
 | Sarvam `sarvam-105b` | v1 | **100%** (30/30) | **92.3% / 100%** | 0% | 99.6 s (avg 25.9 s) |
-| Sarvam `sarvam-105b` | v2 | _not measured: the API account ran out of credits after 8 of 30 cases_ | | | |
+| Sarvam `sarvam-105b` · `reasoning_effort=low` · classifier on `sarvam-105b-conversations` | v1 | 86.7% | 92.3% / 100% | 0% | 65.0 s (avg 19.2 s) |
+| Sarvam `sarvam-105b` | v2 | _not measured yet: the API account ran out of credits after 8 of 30 cases_ | | | |
 
 **Read the fake row carefully:** it is a keyword matcher written alongside this dataset, so its score only shows the pipeline works end to end. It is not a model-quality number. Its misses are the two Devanagari tickets (no Hindi keywords) and one ticket that mentions both a payment error and a failed order.
 
 **Sarvam v1** (measured 10 Nov 2026, run stored in the live Evals tab): every ticket was routed correctly, including the Hinglish and Devanagari ones. All 12 tickets that should escalate did. One extra ticket (E16, an account case) was escalated when it didn't need to be. That is the safe direction to be wrong, because a human sees it. No AI draft broke a policy rule. Average 3,137 tokens per ticket. Latency is the weak spot: `sarvam-105b` reasons before answering, so triage averages ~26 s and p95 is ~100 s. That is fine for an async queue with a human reviewer but would not suit a live chat. 30 tickets is a small set, so treat any number as indicative.
 
-Next measurement (pending API credits): prompt v2, then `SARVAM_REASONING_EFFORT=low` with `SARVAM_CLASSIFY_MODEL=sarvam-105b-conversations`, compared against the v1 row for latency *and* accuracy.
+**Latency experiment** (10 Nov 2026, same v1 prompt, one run of 30): lower reasoning effort plus a non-reasoning classifier cut average latency by ~26% (25.9 → 19.2 s) and p95 by ~35% (99.6 → 65.0 s), and used ~17% fewer tokens. But routing fell from 100% to 86.7%: three billing tickets about failed payments for orders were routed to `order`. All three were still escalated, so no unsafe outcome. One case returned an empty message. **Not adopted**: 19 s is still slow, and the routing loss is real. Next to try: `reasoning_effort=low` alone (keeping the main model as the classifier), to see which change caused the routing drop. Single runs on 30 tickets; latency also varies with API load.
 
 Run it yourself: `npm --prefix backend run eval -- v2` (uses `LLM_PROVIDER` from `backend/.env`).
 
