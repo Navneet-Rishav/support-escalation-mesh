@@ -24,16 +24,18 @@ MongoDB Atlas (database) → Render (Express API) → Vercel (React app). About 
 
 ## 3. Vercel (React app)
 
-From `frontend/`:
+Recommended (auto-deploys on every push to `main`): in the dashboard, *Add New Project* → import the repo (this installs the Vercel GitHub app) → **Root Directory: `frontend`** (press *Save*) → add env var `VITE_API_URL` = `https://<service>.onrender.com` for Production → Deploy.
+
+`VITE_API_URL` is compiled into the bundle at build time, so after changing it, redeploy.
+
+CLI alternative (manual deploys). Run it from the **repo root**, because the project's Root Directory is `frontend`:
 
 ```bash
-vercel login                      # once
-vercel link                       # create project "support-escalation-mesh", root = frontend
+vercel login                             # once
+vercel link                              # project "support-escalation-mesh"
 vercel env add VITE_API_URL production   # paste https://<service>.onrender.com
 vercel --prod
 ```
-
-Or in the dashboard: *Add New Project* → import the repo → **Root Directory: `frontend`** → add env var `VITE_API_URL` → Deploy.
 
 ## 4. Connect them
 
