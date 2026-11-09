@@ -28,5 +28,10 @@ services:
         sync: false
       - key: SARVAM_MODEL
         value: sarvam-105b
+      # Latency knobs (docs/DECISIONS.md §17); set after comparing eval runs.
+      - key: SARVAM_REASONING_EFFORT
+        sync: false
+      - key: SARVAM_CLASSIFY_MODEL
+        sync: false
       - key: REFUND_AGENT_LIMIT_INR
         value: "2000"

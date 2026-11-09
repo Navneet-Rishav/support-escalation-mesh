@@ -100,3 +100,20 @@ The eval tab runs the same graph code as production on a labelled set, so a prom
 - **UI on Vercel**: static Vite build with an SPA rewrite.
 - **MongoDB Atlas M0**: 512 MB, enough for demo data.
 - `docker-compose.yml` + `backend/Dockerfile` for running against a real MongoDB locally; CI builds the image.
+
+## 16. Rule-based fallback when the AI is unavailable
+
+If Sarvam is **unavailable** (402 out of credits, or a timeout, network error, 429 or 5xx that the client already retried), the worker runs the same LangGraph flow again with the keyword baseline (`FakeProvider`) instead of failing the ticket. That happened for real on the first deploy: the account ran out of credits and every new ticket ended up `failed`.
+- **Guardrails are unchanged**: the policy check and draft check are code, so a legal threat, an enterprise customer or a large refund still escalates exactly as before. Every reply still needs human approval.
+- **It is never hidden**: the ticket gets `triage.mode = "rule_based"` plus the error, the reasoning trail starts with an `ai_unavailable → rule_based_fallback` step, and the keyword steps are logged as `code:keyword_*`, not `ai:*`. The queue and ticket page show **"Rule-based triage (AI unavailable)"** and ask the agent to check the category and draft.
+- **What does not fall back**: a non-retryable 4xx (bad request, invalid key) is a bug or a config problem. Hiding it behind the fallback would make it invisible, so those still go through retry → `failed`.
+- **Evals never fall back**: they measure the model, so a provider error is recorded as an error.
+- Alternatives considered: switching the whole deployment to the fake provider (loses the real AI whenever it is available, and is easy to forget to switch back); marking tickets `failed` for a human (the old behaviour, safe but gives the agent nothing to work with); a second paid LLM provider (costs money, more keys to manage).
+
+## 17. Triage latency knobs
+
+With `sarvam-105b` at the API's default reasoning, the v1 eval averaged ~26 s per ticket (p95 ~100 s), almost all of it reasoning tokens across 3 LLM calls (classify, specialist, draft). Reasoning tokens also count toward `max_tokens`. Two settings, both configurable so they can be measured rather than assumed:
+- `SARVAM_REASONING_EFFORT` (`none | low | medium | high | max`, sent as `reasoning_effort` with the main model). Sarvam's docs disagree on the default (`medium` in the API reference, `low` on the model page), so it is set explicitly.
+- `SARVAM_CLASSIFY_MODEL`: a separate model for the classifier only, e.g. `sarvam-105b-conversations`, which Sarvam lists as non-reasoning, same price, same v1 endpoint. Classification is a short structured choice, so it needs reasoning least; the specialist (refund amounts) and drafter keep the main model.
+- The provider's model label records the settings (e.g. `sarvam-105b · effort low · classify sarvam-105b-conversations`), so every ticket and eval run shows which configuration produced it. Compare runs in the Evals tab before keeping a setting: lower latency is only worth it if routing and escalation recall hold.
+- The UI shows a clear "AI is triaging…" state with elapsed seconds, so a slow triage reads as work in progress rather than a hang.

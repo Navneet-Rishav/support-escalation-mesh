@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, errorMessage } from '../lib/api';
-import { formatRelative } from '../lib/format';
+import { formatRelative, RULE_BASED_LABEL } from '../lib/format';
 import type { TicketList, TicketStatus } from '../lib/types';
 import { Card, EmptyState, ErrorState, PriorityBadge, SlaBadge, Spinner, StatusBadge, Pill } from '../components/ui';
 import { cx } from '../lib/cx';
@@ -77,8 +77,10 @@ export function QueuePage() {
       </div>
 
       {triaging > 0 && (
-        <p className="flex items-center gap-2 text-sm text-sky-800">
-          <Spinner small /> AI is triaging {triaging} new ticket{triaging > 1 ? 's' : ''}…
+        <p role="status" aria-live="polite" className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          <Spinner small />
+          <span className="font-medium">AI is triaging {triaging} new ticket{triaging > 1 ? 's' : ''}…</span>
+          <span className="text-sky-800">Usually under a minute each; they appear below when ready.</span>
         </p>
       )}
 
@@ -104,6 +106,7 @@ export function QueuePage() {
                     <StatusBadge status={t.status} />
                     {t.category && <Pill>{t.category}</Pill>}
                     {t.language && t.language !== 'en' && <Pill tone="indigo">{t.language}</Pill>}
+                    {t.triage?.mode === 'rule_based' && <Pill tone="amber">{RULE_BASED_LABEL}</Pill>}
                     <span className="ml-auto">
                       <SlaBadge dueAt={t.slaDueAt} now={now} done={CLOSED.includes(t.status)} />
                     </span>

@@ -44,7 +44,7 @@ ticketsRouter.get('/', async (req, res) => {
       .sort(sort)
       .skip(q.offset)
       .limit(q.limit)
-      .select('ref channel customer subject status priority slaDueAt category language assigneeName createdAt updatedAt triage.decision triage.reasons')
+      .select('ref channel customer subject status priority slaDueAt category language assigneeName createdAt updatedAt triage.decision triage.reasons triage.mode')
       .lean(),
     Ticket.countDocuments(filter),
     Ticket.aggregate<{ _id: string; n: number }>([{ $group: { _id: '$status', n: { $sum: 1 } } }]),

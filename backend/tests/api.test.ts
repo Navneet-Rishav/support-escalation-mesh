@@ -7,10 +7,21 @@ import { Ticket } from '../src/models/Ticket.js';
 import { AuditEvent } from '../src/models/AuditEvent.js';
 import { EvalRun } from '../src/models/EvalRun.js';
 import { setLlmProvider } from '../src/llm/index.js';
-import { claimNextTicket, processNextTicket, requeueStaleTickets, MAX_TRIAGE_ATTEMPTS } from '../src/services/triage.js';
-import { LlmError } from '../src/llm/types.js';
+import { claimNextTicket, isProviderUnavailable, processNextTicket, requeueStaleTickets, MAX_TRIAGE_ATTEMPTS } from '../src/services/triage.js';
+import { LlmError, type LlmProvider } from '../src/llm/types.js';
 
 useTestDb();
+
+/** A provider whose every call fails with the given error (simulates Sarvam being down or out of credits). */
+function failingProvider(error: Error): LlmProvider {
+  return {
+    name: 'sarvam',
+    model: 'test',
+    complete: async () => {
+      throw error;
+    },
+  };
+}
 
 async function seedOrder(amountInr = 1299, tier: 'standard' | 'enterprise' = 'standard') {
   await Customer.create({ name: 'Aarav Mehta', email: 'aarav@example.com', tier });
@@ -146,24 +157,104 @@ describe('triage worker', () => {
     expect([a, b].filter(Boolean)).toHaveLength(1);
   });
 
-  it('retries failed triage and marks the ticket failed after max attempts', async () => {
-    setLlmProvider({
-      name: 'down',
-      model: 'test',
-      complete: async () => {
-        throw new LlmError('provider down', true);
-      },
-    });
+  it('retries failed triage and marks the ticket failed after max attempts (non-retryable error: no fallback)', async () => {
+    setLlmProvider(failingProvider(new LlmError('Sarvam returned HTTP 400: bad request', false, 400)));
     try {
       const res = await request(app).post('/api/intake/web').send(refundTicket).expect(202);
       for (let i = 0; i < MAX_TRIAGE_ATTEMPTS; i++) await processNextTicket();
       const t = await Ticket.findOne({ ref: res.body.ref });
       expect(t).toMatchObject({ status: 'failed', attempts: MAX_TRIAGE_ATTEMPTS });
-      expect(t?.failureReason).toContain('provider down');
+      expect(t?.failureReason).toContain('HTTP 400');
       expect(await processNextTicket()).toBe(false);
     } finally {
       setLlmProvider(undefined);
     }
+  });
+
+  describe('rule-based fallback when the AI is unavailable', () => {
+    it('out of credits (402): triages with the keyword baseline on the first attempt and marks it rule-based', async () => {
+      await seedOrder();
+      setLlmProvider(failingProvider(new LlmError('Sarvam returned HTTP 402: No credits available.', false, 402)));
+      try {
+        const t = await submitAndTriage();
+        expect(t).toMatchObject({ status: 'awaiting_review', category: 'billing', attempts: 1 });
+        expect(t?.triage).toMatchObject({ mode: 'rule_based', provider: 'fake', model: 'keyword-baseline' });
+        expect(t?.triage?.fallbackReason).toContain('402');
+        expect(t?.triage?.approvedRefundInr).toBe(1299);
+        const steps = (await AuditEvent.find({ ticket: t!._id }).sort({ at: 1, _id: 1 })).map((a) => a.step);
+        expect(steps).toEqual(['received', 'ai_unavailable', 'classify', 'lookup_order', 'billing_agent', 'policy_check', 'draft_reply', 'check_draft']);
+        const notice = await AuditEvent.findOne({ ticket: t!._id, step: 'ai_unavailable' }).lean();
+        expect(notice).toMatchObject({ actor: 'system', decision: 'rule_based_fallback' });
+        const actors = (await AuditEvent.find({ ticket: t!._id }).lean()).map((a) => a.actor);
+        expect(actors.filter((a) => a.startsWith('ai:'))).toEqual([]);
+        expect(actors).toContain('code:keyword_classifier');
+      } finally {
+        setLlmProvider(undefined);
+      }
+    });
+
+    it.each([
+      ['timeout', new LlmError('Sarvam request timed out after 60000 ms', true)],
+      ['5xx after retries', new LlmError('Sarvam returned HTTP 503: unavailable', true, 503)],
+    ])('%s: code-enforced rules still apply (enterprise customer is escalated)', async (_name, error) => {
+      await seedOrder(1299, 'enterprise');
+      setLlmProvider(failingProvider(error));
+      try {
+        const t = await submitAndTriage();
+        expect(t?.status).toBe('escalated');
+        expect(t?.triage?.mode).toBe('rule_based');
+        expect(t?.triage?.reasons).toContain('enterprise_customer');
+        expect(t?.triage?.draftReply).toBeUndefined();
+      } finally {
+        setLlmProvider(undefined);
+      }
+    });
+
+    it('a legal threat is still escalated under the fallback', async () => {
+      setLlmProvider(failingProvider(new LlmError('Sarvam returned HTTP 402: No credits available.', false, 402)));
+      try {
+        const t = await submitAndTriage({
+          ...refundTicket,
+          body: 'Refund my money for BZ-10001 or I will file a consumer court case and send a legal notice.',
+        });
+        expect(t?.status).toBe('escalated');
+        expect(t?.triage?.mode).toBe('rule_based');
+        expect(t?.triage?.flags?.legal).toBe(true);
+      } finally {
+        setLlmProvider(undefined);
+      }
+    });
+
+    it('the queue and ticket APIs expose the triage mode for the UI', async () => {
+      const { token } = await createUser();
+      await seedOrder();
+      setLlmProvider(failingProvider(new LlmError('Sarvam returned HTTP 402: No credits available.', false, 402)));
+      try {
+        const t = await submitAndTriage();
+        const list = await request(app).get('/api/tickets').set(auth(token)).expect(200);
+        expect(list.body.items[0].triage.mode).toBe('rule_based');
+        const detail = await request(app).get(`/api/tickets/${t!._id}`).set(auth(token)).expect(200);
+        expect(detail.body.ticket.triage.mode).toBe('rule_based');
+      } finally {
+        setLlmProvider(undefined);
+      }
+    });
+
+    it('normal AI triage is marked mode "ai"', async () => {
+      await seedOrder();
+      const t = await submitAndTriage();
+      expect(t?.triage?.mode).toBe('ai');
+      expect(t?.triage?.fallbackReason).toBeUndefined();
+    });
+  });
+
+  it('isProviderUnavailable: 402 and retryable errors yes; other 4xx and non-LLM errors no', () => {
+    expect(isProviderUnavailable(new LlmError('x', false, 402))).toBe(true);
+    expect(isProviderUnavailable(new LlmError('x', true, 429))).toBe(true);
+    expect(isProviderUnavailable(new LlmError('x', true))).toBe(true);
+    expect(isProviderUnavailable(new LlmError('x', false, 400))).toBe(false);
+    expect(isProviderUnavailable(new LlmError('x', false, 401))).toBe(false);
+    expect(isProviderUnavailable(new Error('bug'))).toBe(false);
   });
 
   it('requeues tickets stuck in triaging', async () => {

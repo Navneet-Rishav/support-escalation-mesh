@@ -35,6 +35,7 @@
 - **Rate limits**: per IP on login and public intake, **per user** on the LLM-heavy eval endpoint.
 - **MongoDB-backed job queue**: `findOneAndUpdate` claims a ticket atomically, so two workers never take the same one. Failed triage retries up to 3 times, and tickets stuck mid-triage are re-queued after a restart (Render free tier sleeps).
 - **Audit trail**: every AI step, code check and human action is stored with input, output, decision, latency and tokens.
+- **Graceful degradation**: if the AI provider is unavailable (out of credits, timeout, 5xx after retries), the ticket is triaged by the keyword rules instead, shown as **"Rule-based triage (AI unavailable)"** in the queue, ticket page and reasoning trail, with the same code guardrails. Bad requests and config errors are *not* hidden this way ([DECISIONS §16](docs/DECISIONS.md)).
 
 **Guardrails: the LLM proposes, code decides** ([`policy.ts`](backend/src/domain/policy.ts))
 - Refunds above ₹2,000 (configurable) → human. Refunds are capped at the order amount and need a verified order the customer named.
@@ -54,8 +55,8 @@
 - Every model output is validated with Zod; invalid JSON gets one retry with the error message, then fails safely (the ticket goes to a human).
 
 **Testing and CI**
-- **65 backend tests** (Vitest + Supertest) against a real in-memory MongoDB: auth, roles, validation, intake, the worker (atomic claim, retries, stale recovery), the graph, guardrails, the Sarvam client (mocked HTTP), and eval metrics.
-- **10 frontend tests** (Vitest + Testing Library) plus typecheck, lint and build.
+- **74 backend tests** (Vitest + Supertest) against a real in-memory MongoDB: auth, roles, validation, intake, the worker (atomic claim, retries, stale recovery, rule-based fallback on 402/timeout/5xx with guardrails still applied), the graph, guardrails, the Sarvam client (mocked HTTP), and eval metrics.
+- **12 frontend tests** (Vitest + Testing Library) plus typecheck, lint and build.
 - GitHub Actions runs everything on each push, plus a Docker image build. CI never calls a paid API.
 
 ## Architecture
@@ -132,6 +133,8 @@ The eval set is 30 hand-labelled tickets ([`dataset.ts`](backend/src/evals/datas
 
 **Sarvam v1** (measured 10 Nov 2026, run stored in the live Evals tab): every ticket was routed correctly, including the Hinglish and Devanagari ones. All 12 tickets that should escalate did. One extra ticket (E16, an account case) was escalated when it didn't need to be. That is the safe direction to be wrong, because a human sees it. No AI draft broke a policy rule. Average 3,137 tokens per ticket. Latency is the weak spot: `sarvam-105b` reasons before answering, so triage averages ~26 s and p95 is ~100 s. That is fine for an async queue with a human reviewer but would not suit a live chat. 30 tickets is a small set, so treat any number as indicative.
 
+Next measurement (pending API credits): prompt v2, then `SARVAM_REASONING_EFFORT=low` with `SARVAM_CLASSIFY_MODEL=sarvam-105b-conversations`, compared against the v1 row for latency *and* accuracy.
+
 Run it yourself: `npm --prefix backend run eval -- v2` (uses `LLM_PROVIDER` from `backend/.env`).
 
 ## Local setup
@@ -176,8 +179,8 @@ Full reasoning, with alternatives considered, is in [docs/DECISIONS.md](docs/DEC
 - **The worker runs inside the API process.** It is simple and fits the free tier, but does not scale horizontally beyond the atomic claim. A real deployment would use a separate worker or a managed queue.
 - **The keyword detectors are small lists.** They will miss creative phrasing; the LLM's flags are the second line of defence.
 - **Render free tier sleeps after 15 minutes idle.** The first request can take up to a minute; the UI says so.
-- **Triage is slow with a reasoning model** (~26 s average per ticket with `sarvam-105b`). Tickets show as "Triaging" meanwhile. A smaller non-reasoning model would cut this, at some accuracy cost.
-- **If the LLM API fails** (e.g. out of credits), triage retries 3 times and then marks the ticket `failed` so a human picks it up. Nothing is auto-sent.
+- **Triage is slow with a reasoning model** (~26 s average per ticket with `sarvam-105b` at default reasoning). The UI shows "AI is triaging…" with elapsed time. `SARVAM_REASONING_EFFORT` and `SARVAM_CLASSIFY_MODEL` (a non-reasoning model for the classifier) exist to cut this; their effect has **not been measured yet** ([DECISIONS §17](docs/DECISIONS.md)).
+- **If the LLM API is unavailable**, tickets get rule-based triage (see above), which is less accurate than the model (e.g. it misses Devanagari tickets). Agents see the label and review as usual. Nothing is auto-sent.
 - **Bearer tokens in localStorage**, because the API and UI are on different domains. This is vulnerable to XSS (mitigated by React escaping and no `dangerouslySetInnerHTML`). httpOnly cookies would be the next step.
 - **Not built:** outbound email sending (replies are recorded, not emailed), multi-tenant support, attachments.
 

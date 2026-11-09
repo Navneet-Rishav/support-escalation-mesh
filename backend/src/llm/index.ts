@@ -10,7 +10,12 @@ export function getLlmProvider(): LlmProvider {
   if (!provider) {
     provider =
       config.LLM_PROVIDER === 'sarvam'
-        ? new SarvamProvider({ apiKey: config.SARVAM_API_KEY!, model: config.SARVAM_MODEL })
+        ? new SarvamProvider({
+            apiKey: config.SARVAM_API_KEY!,
+            model: config.SARVAM_MODEL,
+            reasoningEffort: config.SARVAM_REASONING_EFFORT,
+            classifyModel: config.SARVAM_CLASSIFY_MODEL,
+          })
         : new FakeProvider();
   }
   return provider;

@@ -31,6 +31,8 @@ export const REASON_LABEL: Record<string, string> = {
   triage_error: 'Triage failed with an error',
 };
 
+export const RULE_BASED_LABEL = 'Rule-based triage (AI unavailable)';
+
 export const reasonLabel = (code: string) => REASON_LABEL[code] ?? code.replace(/_/g, ' ');
 
 export function formatInr(n: number | null | undefined): string {

@@ -15,6 +15,15 @@ const EnvSchema = z.object({
   LLM_PROVIDER: z.enum(['fake', 'sarvam']).default('fake'),
   SARVAM_API_KEY: z.string().optional(),
   SARVAM_MODEL: z.string().default('sarvam-105b'),
+  // Latency knobs (see docs/DECISIONS.md). Empty = API default.
+  SARVAM_REASONING_EFFORT: z
+    .enum(['none', 'low', 'medium', 'high', 'max', ''])
+    .optional()
+    .transform((v) => v || undefined),
+  SARVAM_CLASSIFY_MODEL: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
   LLM_COST_PER_1K_TOKENS_INR: z
     .string()
     .optional()

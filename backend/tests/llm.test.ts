@@ -28,6 +28,27 @@ describe('SarvamProvider', () => {
     expect(JSON.parse(init.body as string)).toMatchObject({ model: 'sarvam-105b', response_format: { type: 'json_object' } });
   });
 
+  it('sends no reasoning_effort by default and labels the model plainly', async () => {
+    const fetchImpl = vi.fn(async () => okResponse('{}'));
+    const p = new SarvamProvider({ apiKey: 'k', fetchImpl, sleep: noSleep });
+    await p.complete(req);
+    const body = JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).not.toHaveProperty('reasoning_effort');
+    expect(p.model).toBe('sarvam-105b');
+  });
+
+  it('sends reasoning_effort with the main model and routes classify to the faster model', async () => {
+    const fetchImpl = vi.fn(async () => okResponse('{}'));
+    const p = new SarvamProvider({ apiKey: 'k', fetchImpl, sleep: noSleep, reasoningEffort: 'low', classifyModel: 'sarvam-105b-conversations' });
+    await p.complete(req); // classify
+    await p.complete({ ...req, task: 'draft' });
+    const bodies = fetchImpl.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string));
+    expect(bodies[0]).toMatchObject({ model: 'sarvam-105b-conversations' });
+    expect(bodies[0]).not.toHaveProperty('reasoning_effort');
+    expect(bodies[1]).toMatchObject({ model: 'sarvam-105b', reasoning_effort: 'low' });
+    expect(p.model).toBe('sarvam-105b · effort low · classify sarvam-105b-conversations');
+  });
+
   it('retries on 429 and 5xx, then succeeds', async () => {
     const fetchImpl = vi
       .fn()

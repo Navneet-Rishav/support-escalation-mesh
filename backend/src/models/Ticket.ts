@@ -36,6 +36,9 @@ const triageSchema = new Schema(
     promptVersion: String,
     provider: String,
     model: String,
+    /** 'rule_based' when the LLM was unavailable and the keyword baseline triaged the ticket instead. */
+    mode: { type: String, enum: ['ai', 'rule_based'], default: 'ai' },
+    fallbackReason: String,
     totalLatencyMs: Number,
     totalTokens: Number,
   },

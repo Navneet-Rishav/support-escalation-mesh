@@ -7,6 +7,9 @@ export interface User {
   role: Role;
 }
 
+/** 'rule_based' = the AI provider was unavailable and the keyword baseline triaged the ticket. */
+export type TriageMode = 'ai' | 'rule_based';
+
 export type TicketStatus = 'new' | 'triaging' | 'awaiting_review' | 'escalated' | 'human_handling' | 'resolved' | 'failed';
 export type Category = 'billing' | 'technical' | 'order' | 'account' | 'other';
 export type Priority = 'P1' | 'P2' | 'P3';
@@ -25,7 +28,7 @@ export interface TicketSummary {
   assigneeName?: string;
   createdAt: string;
   updatedAt: string;
-  triage?: { decision?: 'review' | 'escalate'; reasons?: string[] };
+  triage?: { decision?: 'review' | 'escalate'; reasons?: string[]; mode?: TriageMode };
 }
 
 export interface Ticket extends TicketSummary {
@@ -50,6 +53,8 @@ export interface Ticket extends TicketSummary {
     promptVersion?: string;
     provider?: string;
     model?: string;
+    mode?: TriageMode;
+    fallbackReason?: string;
     totalLatencyMs?: number;
     totalTokens?: number;
   };

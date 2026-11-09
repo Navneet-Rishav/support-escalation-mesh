@@ -3,6 +3,13 @@ import { LlmError, type LlmProvider, type LlmRequest, type LlmResponse } from '.
 export interface SarvamOptions {
   apiKey: string;
   model?: string;
+  /**
+   * Sent as `reasoning_effort` with the main model (Sarvam docs: none | low | medium | high | max).
+   * Unset = the API default. Reasoning tokens count toward max_tokens and add most of the latency.
+   */
+  reasoningEffort?: ReasoningEffort;
+  /** Optional faster model for the classifier step only, e.g. the non-reasoning `sarvam-105b-conversations`. */
+  classifyModel?: string;
   baseUrl?: string;
   timeoutMs?: number;
   maxRetries?: number;
@@ -10,6 +17,9 @@ export interface SarvamOptions {
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
 }
+
+export const REASONING_EFFORTS = ['none', 'low', 'medium', 'high', 'max'] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 interface ChatCompletionResponse {
   choices?: { message?: { content?: string | null } }[];
@@ -25,7 +35,9 @@ const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
  */
 export class SarvamProvider implements LlmProvider {
   readonly name = 'sarvam';
+  /** Human-readable configuration label, stored on tickets and eval runs (e.g. "sarvam-105b · effort low"). */
   readonly model: string;
+  private readonly mainModel: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
@@ -33,7 +45,14 @@ export class SarvamProvider implements LlmProvider {
   private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(private readonly opts: SarvamOptions) {
-    this.model = opts.model ?? 'sarvam-105b';
+    this.mainModel = opts.model ?? 'sarvam-105b';
+    this.model = [
+      this.mainModel,
+      opts.reasoningEffort ? `effort ${opts.reasoningEffort}` : null,
+      opts.classifyModel ? `classify ${opts.classifyModel}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
     this.baseUrl = (opts.baseUrl ?? 'https://api.sarvam.ai').replace(/\/$/, '');
     this.timeoutMs = opts.timeoutMs ?? 60_000;
     this.maxRetries = opts.maxRetries ?? 2;
@@ -42,8 +61,11 @@ export class SarvamProvider implements LlmProvider {
   }
 
   async complete(req: LlmRequest): Promise<LlmResponse> {
+    const useClassifyModel = req.task === 'classify' && !!this.opts.classifyModel;
     const body = {
-      model: this.model,
+      model: useClassifyModel ? this.opts.classifyModel : this.mainModel,
+      // reasoning_effort only goes with the main (reasoning) model; the classify override may not support it.
+      ...(this.opts.reasoningEffort && !useClassifyModel ? { reasoning_effort: this.opts.reasoningEffort } : {}),
       messages: req.messages,
       temperature: req.temperature ?? 0.2,
       max_tokens: req.maxTokens ?? 2048,

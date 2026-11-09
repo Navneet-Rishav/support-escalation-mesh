@@ -2,7 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 import { getLlmProvider } from '../llm/index.js';
-import { runTriage, type AuditStep, type TriageDeps } from '../agents/graph.js';
+import { FakeProvider } from '../llm/fake.js';
+import { LlmError, type LlmProvider } from '../llm/types.js';
+import { runTriage, type AuditStep, type TriageDeps, type TriageInput, type TriageOutcome } from '../agents/graph.js';
 import type { PromptVersion } from '../agents/prompts.js';
 import { extractOrderId } from '../domain/detectors.js';
 import type { OrderContext } from '../domain/policy.js';
@@ -73,13 +75,60 @@ export async function lookupOrderInDb(orderId: string | null | undefined, email:
   return { orderId: order.orderId, amountInr: order.amountInr, status: order.status, items: order.items };
 }
 
-export function defaultDeps(): TriageDeps {
+export interface TriageServiceDeps extends TriageDeps {
+  /**
+   * Used when the main LLM is unavailable. Defaults to the keyword baseline. Pass null to disable
+   * the fallback (the ticket then goes through the normal retry -> failed path).
+   */
+  fallbackLlm?: LlmProvider | null;
+}
+
+export function defaultDeps(): TriageServiceDeps {
   return {
     llm: getLlmProvider(),
     promptVersion: CURRENT_PROMPT_VERSION,
     lookupOrder: lookupOrderInDb,
     refundAgentLimitInr: config.REFUND_AGENT_LIMIT_INR,
   };
+}
+
+/**
+ * True when the LLM provider is unavailable rather than misbehaving: out of credits (402), or a timeout,
+ * network error, 429 or 5xx that the client already retried. A non-retryable 4xx (bad request, bad key)
+ * is a bug or a config problem, so it is NOT hidden behind the fallback.
+ */
+export function isProviderUnavailable(err: unknown): err is LlmError {
+  return err instanceof LlmError && (err.retryable || err.status === 402);
+}
+
+/**
+ * Runs the graph with the configured LLM. If the provider is unavailable, runs the same graph again with
+ * the keyword baseline, so the ticket still gets a category and a draft and, above all, passes the same
+ * code-enforced policy and draft checks. The result is marked rule-based so agents know no AI was involved.
+ */
+async function runWithFallback(
+  input: TriageInput,
+  deps: TriageServiceDeps,
+): Promise<{ outcome: TriageOutcome; used: LlmProvider; fallbackReason?: string }> {
+  try {
+    return { outcome: await runTriage(input, deps), used: deps.llm };
+  } catch (err) {
+    const fallback = deps.fallbackLlm === undefined ? new FakeProvider() : deps.fallbackLlm;
+    if (!fallback || fallback.name === deps.llm.name || !isProviderUnavailable(err)) throw err;
+    const outcome = await runTriage(input, { ...deps, llm: fallback });
+    // No AI ran, so the "AI" steps are relabelled as the keyword code they really were.
+    outcome.steps = outcome.steps.map((s) => (s.actor.startsWith('ai:') ? { ...s, actor: s.actor.replace(/^ai:/, 'code:keyword_') } : s));
+    outcome.steps.unshift({
+      step: 'ai_unavailable',
+      actor: 'system',
+      input: { provider: deps.llm.name, model: deps.llm.model },
+      output: { error: err.message, status: err.status ?? null, fallback: `${fallback.name}/${fallback.model}` },
+      decision: 'rule_based_fallback',
+      latencyMs: 0,
+      tokens: { prompt: 0, completion: 0 },
+    });
+    return { outcome, used: fallback, fallbackReason: err.message };
+  }
 }
 
 /**
@@ -100,12 +149,12 @@ async function saveSteps(ticketId: Types.ObjectId, steps: AuditStep[]) {
 }
 
 /** Runs the agent graph on one claimed ticket and stores the outcome and audit trail. */
-export async function triageTicket(ticketId: Types.ObjectId, deps: TriageDeps = defaultDeps()): Promise<void> {
+export async function triageTicket(ticketId: Types.ObjectId, deps: TriageServiceDeps = defaultDeps()): Promise<void> {
   const ticket = await Ticket.findById(ticketId);
   if (!ticket || ticket.status !== 'triaging') return;
 
   try {
-    const outcome = await runTriage(
+    const { outcome, used, fallbackReason } = await runWithFallback(
       {
         subject: ticket.subject,
         body: ticket.body,
@@ -137,14 +186,17 @@ export async function triageTicket(ticketId: Types.ObjectId, deps: TriageDeps = 
         draftReply: outcome.draft ?? undefined,
         draftViolations: outcome.violations,
         promptVersion: deps.promptVersion,
-        provider: deps.llm.name,
-        model: deps.llm.model,
+        provider: used.name,
+        model: used.model,
+        mode: fallbackReason ? 'rule_based' : 'ai',
+        fallbackReason,
         totalLatencyMs: outcome.totalLatencyMs,
         totalTokens: outcome.totalTokens,
       },
     });
     await ticket.save();
-    logger.info({ ref: ticket.ref, status: ticket.status, category: ticket.category }, 'ticket triaged');
+    if (fallbackReason) logger.warn({ ref: ticket.ref, err: fallbackReason }, 'AI unavailable; used rule-based triage');
+    logger.info({ ref: ticket.ref, status: ticket.status, category: ticket.category, mode: fallbackReason ? 'rule_based' : 'ai' }, 'ticket triaged');
   } catch (err) {
     const message = (err as Error).message;
     const giveUp = ticket.attempts >= MAX_TRIAGE_ATTEMPTS;
@@ -162,7 +214,7 @@ export async function triageTicket(ticketId: Types.ObjectId, deps: TriageDeps = 
 }
 
 /** Claims and triages one ticket. Returns false when the queue is empty. */
-export async function processNextTicket(deps?: TriageDeps): Promise<boolean> {
+export async function processNextTicket(deps?: TriageServiceDeps): Promise<boolean> {
   const ticket = await claimNextTicket();
   if (!ticket) return false;
   await triageTicket(ticket._id, deps);

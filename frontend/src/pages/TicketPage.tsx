@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/authContext';
-import { formatInr, formatRelative, parseActor, reasonLabel } from '../lib/format';
+import { formatInr, formatRelative, parseActor, reasonLabel, RULE_BASED_LABEL } from '../lib/format';
 import type { AuditEvent, Ticket } from '../lib/types';
 import { Button, Card, ErrorState, Pill, PriorityBadge, SlaBadge, Spinner, StatusBadge } from '../components/ui';
 import { cx } from '../lib/cx';
@@ -54,7 +54,7 @@ export function TicketPage() {
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-3">
           <CustomerMessage ticket={ticket} now={now} />
-          <TriagePanel ticket={ticket} />
+          <TriagePanel ticket={ticket} now={now} />
           <ReplyPanel key={`${ticket._id}:${ticket.status}:${ticket.triage?.draftReply ?? ''}`} ticket={ticket} />
         </div>
         <div className="lg:col-span-2">
@@ -93,15 +93,29 @@ function CustomerMessage({ ticket, now }: { ticket: Ticket; now: Date }) {
   );
 }
 
-function TriagePanel({ ticket }: { ticket: Ticket }) {
+/** Shown while the ticket waits for or is in AI triage. The page polls every 2 s, so the elapsed time updates. */
+export function TriagingCard({ ticket, now }: { ticket: Pick<Ticket, 'status' | 'createdAt'>; now: Date }) {
+  const elapsed = Math.max(0, Math.round((now.getTime() - new Date(ticket.createdAt).getTime()) / 1000));
+  const queued = ticket.status === 'new';
+  return (
+    <Card>
+      <div aria-live="polite" className="space-y-2">
+        <p className="flex items-center gap-2 font-medium text-sky-900">
+          <Spinner small /> {queued ? 'Waiting for the AI triage worker…' : 'AI is triaging…'}
+          <span className="ml-auto text-xs font-normal text-slate-500 tabular-nums">{elapsed}s</span>
+        </p>
+        <p className="text-sm text-slate-600">
+          Classifier → specialist agent → policy check (code) → reply draft → draft check (code). This usually takes under a minute; the page
+          updates by itself. If the AI service is unavailable, the ticket is triaged by keyword rules instead and marked as such.
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+function TriagePanel({ ticket, now }: { ticket: Ticket; now: Date }) {
   const t = ticket.triage;
-  if (ticket.status === 'new' || ticket.status === 'triaging') {
-    return (
-      <Card>
-        <Spinner label="AI agents are triaging this ticket…" />
-      </Card>
-    );
-  }
+  if (ticket.status === 'new' || ticket.status === 'triaging') return <TriagingCard ticket={ticket} now={now} />;
   if (!t) {
     return (
       <Card>
@@ -111,15 +125,26 @@ function TriagePanel({ ticket }: { ticket: Ticket }) {
     );
   }
   const escalate = t.decision === 'escalate';
+  const ruleBased = t.mode === 'rule_based';
 
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-medium">AI triage</h2>
+        <h2 className="font-medium">{ruleBased ? 'Triage' : 'AI triage'}</h2>
         <span className="text-xs text-slate-500">
           {t.provider}/{t.model} · prompt {t.promptVersion} · {t.totalLatencyMs} ms · {t.totalTokens} tokens
         </span>
       </div>
+      {ruleBased && (
+        <div role="note" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-medium">{RULE_BASED_LABEL}</p>
+          <p className="mt-0.5">
+            The AI service could not be reached, so keyword rules classified this ticket and wrote the draft. The same code-enforced guardrails
+            were applied. Check the category and draft carefully before approving.
+          </p>
+          {t.fallbackReason && <p className="mt-1 text-xs break-words text-amber-800">Reason: {t.fallbackReason.slice(0, 160)}</p>}
+        </div>
+      )}
       {t.summary && <p className="mt-2 text-sm text-slate-700">{t.summary}</p>}
 
       <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
