@@ -4,7 +4,8 @@
 
 **A MERN + TypeScript support desk.** Customers submit tickets; an Express REST API queues them; AI agents triage each one and draft a reply; **code-level guardrails** decide what the AI may do; and a human agent approves, edits or takes over every ticket in a React console.
 
-> **Live demo:** _deploying soon (Render + Vercel + MongoDB Atlas; see [docs/DEPLOY.md](docs/DEPLOY.md))._ Click **"Try demo as Agent"** on the login page; no sign-up needed.
+> **Live demo:** https://support-escalation-mesh.vercel.app · click **"Try demo as Agent"** (or **Admin**) on the login page; no sign-up needed.
+> **API:** https://support-escalation-mesh-api.onrender.com/healthz (Render free tier: the first request after 15 idle minutes can take up to a minute).
 > Run it locally in 3 commands: see [Local setup](#local-setup).
 
 | Agent queue | Ticket review (AI draft + reasoning trail) |
@@ -124,9 +125,12 @@ The eval set is 30 hand-labelled tickets ([`dataset.ts`](backend/src/evals/datas
 | Provider | Prompt | Routing acc. | Escalation P / R | Draft violations | p95 latency |
 |---|---|---|---|---|---|
 | Fake keyword baseline | v2 | 90% | 85.7% / 100% | 0% | under 30 ms |
-| Sarvam `sarvam-105b` | v1 / v2 | _not run yet: needs an API key on the deployed server_ | | | |
+| Sarvam `sarvam-105b` | v1 | **100%** (30/30) | **92.3% / 100%** | 0% | 99.6 s (avg 25.9 s) |
+| Sarvam `sarvam-105b` | v2 | _not measured: the API account ran out of credits after 8 of 30 cases_ | | | |
 
-**Read the fake row carefully:** it is a keyword matcher written alongside this dataset, so its score only shows the pipeline works end to end. It is not a model-quality number. Its misses are the two Devanagari tickets (no Hindi keywords) and one ticket that mentions both a payment error and a failed order. Sarvam numbers will be added here once measured. 30 tickets is a small set, so treat any number as indicative.
+**Read the fake row carefully:** it is a keyword matcher written alongside this dataset, so its score only shows the pipeline works end to end. It is not a model-quality number. Its misses are the two Devanagari tickets (no Hindi keywords) and one ticket that mentions both a payment error and a failed order.
+
+**Sarvam v1** (measured 10 Nov 2026, run stored in the live Evals tab): every ticket was routed correctly, including the Hinglish and Devanagari ones. All 12 tickets that should escalate did. One extra ticket (E16, an account case) was escalated when it didn't need to be. That is the safe direction to be wrong, because a human sees it. No AI draft broke a policy rule. Average 3,137 tokens per ticket. Latency is the weak spot: `sarvam-105b` reasons before answering, so triage averages ~26 s and p95 is ~100 s. That is fine for an async queue with a human reviewer but would not suit a live chat. 30 tickets is a small set, so treat any number as indicative.
 
 Run it yourself: `npm --prefix backend run eval -- v2` (uses `LLM_PROVIDER` from `backend/.env`).
 
@@ -172,6 +176,8 @@ Full reasoning, with alternatives considered, is in [docs/DECISIONS.md](docs/DEC
 - **The worker runs inside the API process.** It is simple and fits the free tier, but does not scale horizontally beyond the atomic claim. A real deployment would use a separate worker or a managed queue.
 - **The keyword detectors are small lists.** They will miss creative phrasing; the LLM's flags are the second line of defence.
 - **Render free tier sleeps after 15 minutes idle.** The first request can take up to a minute; the UI says so.
+- **Triage is slow with a reasoning model** (~26 s average per ticket with `sarvam-105b`). Tickets show as "Triaging" meanwhile. A smaller non-reasoning model would cut this, at some accuracy cost.
+- **If the LLM API fails** (e.g. out of credits), triage retries 3 times and then marks the ticket `failed` so a human picks it up. Nothing is auto-sent.
 - **Bearer tokens in localStorage**, because the API and UI are on different domains. This is vulnerable to XSS (mitigated by React escaping and no `dangerouslySetInnerHTML`). httpOnly cookies would be the next step.
 - **Not built:** outbound email sending (replies are recorded, not emailed), multi-tenant support, attachments.
 

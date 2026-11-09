@@ -20,7 +20,7 @@ MongoDB Atlas (database) → Render (Express API) → Vercel (React app). About 
    - `CORS_ORIGIN` = leave as `http://localhost:5173` for now (updated in step 4)
    - `SARVAM_API_KEY` = leave empty for now (the app runs on the fake provider)
 4. Deploy. When it is live, open `https://<service>.onrender.com/healthz`; it should show `{"status":"ok","db":"up"}`.
-5. Seed demo data once: Render dashboard → the service → **Shell** → `node dist/scripts/seed.js`.
+5. Seed demo data once from your own machine (Render's free tier has no Shell): in `backend/`, set `MONGODB_URI` (the Atlas string), `JWT_SECRET` (any 32+ chars), `LLM_PROVIDER` and `SARVAM_API_KEY` in your shell, then `npm run seed -- --reset`. With `LLM_PROVIDER=sarvam` this also stores real eval runs for prompts v1 and v2 (uses API credits).
 
 ## 3. Vercel (React app)
 

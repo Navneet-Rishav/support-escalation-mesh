@@ -5,6 +5,7 @@ services:
     name: support-escalation-mesh-api
     runtime: node
     plan: free
+    region: singapore # closest Render region to the Atlas cluster in Mumbai
     rootDir: backend
     # --include=dev: TypeScript is a dev dependency and NODE_ENV=production would skip it.
     buildCommand: npm ci --include=dev && npm run build
