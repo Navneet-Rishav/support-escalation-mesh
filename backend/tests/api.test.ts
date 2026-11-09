@@ -47,6 +47,16 @@ describe('health and errors', () => {
     expect(res.body).toEqual({ status: 'ok', db: 'up' });
   });
 
+  it('GET /healthz includes the deployed commit when Render provides it', async () => {
+    process.env.RENDER_GIT_COMMIT = '1234567890abcdef';
+    try {
+      const res = await request(app).get('/healthz').expect(200);
+      expect(res.body).toEqual({ status: 'ok', db: 'up', commit: '1234567' });
+    } finally {
+      delete process.env.RENDER_GIT_COMMIT;
+    }
+  });
+
   it('unknown routes return the standard error shape with a request ID', async () => {
     const res = await request(app).get('/api/nope').set('X-Request-Id', 'req-abc-123').expect(404);
     expect(res.body.error).toMatchObject({ code: 'NOT_FOUND', requestId: 'req-abc-123' });

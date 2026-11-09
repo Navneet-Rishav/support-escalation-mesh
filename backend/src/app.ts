@@ -48,7 +48,11 @@ export function createApp() {
 
   app.get('/healthz', (_req, res) => {
     const dbUp = mongoose.connection.readyState === 1;
-    res.status(dbUp ? 200 : 503).json({ status: dbUp ? 'ok' : 'degraded', db: dbUp ? 'up' : 'down' });
+    // Render sets RENDER_GIT_COMMIT; exposing the short SHA makes it easy to check which build is live.
+    const commit = process.env.RENDER_GIT_COMMIT?.slice(0, 7);
+    res
+      .status(dbUp ? 200 : 503)
+      .json({ status: dbUp ? 'ok' : 'degraded', db: dbUp ? 'up' : 'down', ...(commit ? { commit } : {}) });
   });
 
   app.use('/api/auth', authRouter);
