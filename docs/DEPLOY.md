@@ -14,7 +14,7 @@ MongoDB Atlas (database) → Render (Express API) → Vercel (React app). About 
 ## 2. Render (Express API)
 
 1. Sign up at https://render.com with GitHub and give it access to `support-escalation-mesh`.
-2. *New* → **Blueprint** → pick the repo. Render reads `render.yaml`.
+2. *New* → **Blueprint** → pick the repo. Render reads `render.yaml`. In the service's Settings → Build & Deploy, set **Auto-Deploy: After CI Checks Pass** so a push deploys only once GitHub Actions is green.
 3. When asked for the `sync: false` values:
    - `MONGODB_URI` = the Atlas string from step 1
    - `CORS_ORIGIN` = leave as `http://localhost:5173` for now (updated in step 4)
