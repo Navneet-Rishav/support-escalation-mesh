@@ -55,7 +55,7 @@
 - Every model output is validated with Zod; invalid JSON gets one retry with the error message, then fails safely (the ticket goes to a human).
 
 **Testing and CI**
-- **74 backend tests** (Vitest + Supertest) against a real in-memory MongoDB: auth, roles, validation, intake, the worker (atomic claim, retries, stale recovery, rule-based fallback on 402/timeout/5xx with guardrails still applied), the graph, guardrails, the Sarvam client (mocked HTTP), and eval metrics.
+- **75 backend tests** (Vitest + Supertest) against a real in-memory MongoDB: auth, roles, validation, intake, the worker (atomic claim, retries, stale recovery, rule-based fallback on 402/timeout/5xx with guardrails still applied), the graph, guardrails, the Sarvam client (mocked HTTP), and eval metrics.
 - **12 frontend tests** (Vitest + Testing Library) plus typecheck, lint and build.
 - GitHub Actions runs everything on each push, plus a Docker image build. CI never calls a paid API.
 
