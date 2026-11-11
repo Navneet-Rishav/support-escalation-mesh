@@ -1,0 +1,32 @@
+# Secret scanning config (gitleaks v8.30). All default rules stay on; the allow-lists below are
+# exact, known non-secrets. Each is matched as narrowly as possible so a real key in the same
+# file would still fail the scan. Add an entry here only with a comment saying why it is safe.
+title = "support-escalation-mesh"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test-only JWT secret set before the test suite runs; never used outside tests"
+paths = ['''^backend/tests/setupEnv\.ts$''']
+regexes = ['''test-secret-that-is-at-least-32-characters-long''']
+condition = "AND"
+
+[[allowlists]]
+description = "Local docker-compose JWT secret, documented as a placeholder; production uses a Render-generated value"
+paths = ['''^docker-compose\.yml$''']
+regexes = ['''local-docker-secret-change-me-0123456789abcdef''']
+condition = "AND"
+
+[[allowlists]]
+description = "Placeholder in .env.example telling developers to set their own secret"
+paths = ['''^backend/\.env\.example$''']
+regexes = ['''change-me-to-a-long-random-string-at-least-32-chars''']
+condition = "AND"
+
+[[allowlists]]
+description = "False positive: 'p95LatencyMs' is an eval metric name in the UI (a 'key:' field), not a key"
+paths = ['''^frontend/src/pages/EvalsPage\.tsx$''']
+regexTarget = "secret"
+regexes = ['''^p95LatencyMs$''']
+condition = "AND"

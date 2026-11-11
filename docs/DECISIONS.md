@@ -118,3 +118,10 @@ With `sarvam-105b` at the API's default reasoning, the v1 eval averaged ~26 s pe
 - The provider's model label records the settings (e.g. `sarvam-105b · effort low · classify sarvam-105b-conversations`), so every ticket and eval run shows which configuration produced it. Compare runs in the Evals tab before keeping a setting: lower latency is only worth it if routing and escalation recall hold.
 - **Measured (v1 prompt, 30 tickets):** `effort low` + `sarvam-105b-conversations` classifier → avg 19.2 s (from 25.9 s), p95 65.0 s (from 99.6 s), but routing 86.7% (from 100%). Not adopted; both knobs stay unset on Render. Next: effort `low` alone, to isolate which change cost the routing accuracy.
 - The UI shows a clear "AI is triaging…" state with elapsed seconds, so a slow triage reads as work in progress rather than a hang.
+
+## 18. Secret scanning (gitleaks in CI)
+
+A separate workflow (`.github/workflows/gitleaks.yml`) scans the **full git history** on every push and pull request and fails if it finds a secret.
+- Runs the gitleaks binary directly (pinned v8.30.1, SHA-256 checked) rather than a marketplace action: no extra token or permissions, and it's easy to see exactly what runs.
+- `.gitleaks.toml` keeps all default rules and allow-lists only known placeholders (local docker/CI database credentials, the local docker JWT secret, test-only secrets), each matched exactly with a comment explaining why it is safe. A real token planted in any allow-listed file is still caught (checked by hand).
+- Alternative considered: GitHub's built-in secret scanning push protection. It is useful too, but it can't be run locally or shown in CI, and it doesn't cover generic patterns the same way.
