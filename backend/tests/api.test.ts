@@ -42,9 +42,13 @@ async function submitAndTriage(body = refundTicket) {
 }
 
 describe('health and errors', () => {
-  it('GET /healthz reports the database', async () => {
+  it('GET /healthz reports the database and can be pinged cross-origin', async () => {
     const res = await request(app).get('/healthz').expect(200);
     expect(res.body).toEqual({ status: 'ok', db: 'up' });
+    // Only /healthz relaxes Helmet's Cross-Origin-Resource-Policy; other routes keep same-origin.
+    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    const other = await request(app).get('/api/nope');
+    expect(other.headers['cross-origin-resource-policy']).toBe('same-origin');
   });
 
   it('GET /healthz includes the deployed commit when Render provides it', async () => {

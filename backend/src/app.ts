@@ -50,6 +50,9 @@ export function createApp() {
     const dbUp = mongoose.connection.readyState === 1;
     // Render sets RENDER_GIT_COMMIT; exposing the short SHA makes it easy to check which build is live.
     const commit = process.env.RENDER_GIT_COMMIT?.slice(0, 7);
+    // Helmet sends Cross-Origin-Resource-Policy: same-origin, which stops other sites (e.g. the
+    // portfolio's status dot) from even pinging this. Health is public, so relax it here only.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res
       .status(dbUp ? 200 : 503)
       .json({ status: dbUp ? 'ok' : 'degraded', db: dbUp ? 'up' : 'down', ...(commit ? { commit } : {}) });
