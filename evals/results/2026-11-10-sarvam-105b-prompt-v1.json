@@ -1,0 +1,445 @@
+{
+  "label": "sarvam/sarvam-105b · prompt v1 (seed)",
+  "promptVersion": "v1",
+  "provider": "sarvam",
+  "model": "sarvam-105b",
+  "status": "completed",
+  "metrics": {
+    "cases": 30,
+    "routingAccuracy": 1,
+    "escalationPrecision": 0.923,
+    "escalationRecall": 1,
+    "policyViolationRate": 0,
+    "avgLatencyMs": 25930,
+    "p95LatencyMs": 99582,
+    "avgTokensPerTicket": 3137,
+    "costPerTicketInr": null,
+    "errors": 0
+  },
+  "createdAt": "2026-11-09T19:00:46.858Z",
+  "results": [
+    {
+      "caseId": "E01",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 41429,
+      "tokens": 4333
+    },
+    {
+      "caseId": "E02",
+      "language": "hinglish",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 46548,
+      "tokens": 4788
+    },
+    {
+      "caseId": "E03",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "refund_over_agent_limit"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 15620,
+      "tokens": 1864
+    },
+    {
+      "caseId": "E04",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "refund_without_verified_order"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 22212,
+      "tokens": 2483
+    },
+    {
+      "caseId": "E05",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 26501,
+      "tokens": 3276
+    },
+    {
+      "caseId": "E06",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 32423,
+      "tokens": 4037
+    },
+    {
+      "caseId": "E07",
+      "language": "hinglish",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 33277,
+      "tokens": 4142
+    },
+    {
+      "caseId": "E08",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 18476,
+      "tokens": 2791
+    },
+    {
+      "caseId": "E09",
+      "language": "hinglish",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 33718,
+      "tokens": 4919
+    },
+    {
+      "caseId": "E10",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "high_value_order",
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 20871,
+      "tokens": 3008
+    },
+    {
+      "caseId": "E11",
+      "language": "en",
+      "expectedCategory": "technical",
+      "predictedCategory": "technical",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 16845,
+      "tokens": 3605
+    },
+    {
+      "caseId": "E12",
+      "language": "hinglish",
+      "expectedCategory": "technical",
+      "predictedCategory": "technical",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 23796,
+      "tokens": 4267
+    },
+    {
+      "caseId": "E13",
+      "language": "en",
+      "expectedCategory": "technical",
+      "predictedCategory": "technical",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 13862,
+      "tokens": 3376
+    },
+    {
+      "caseId": "E14",
+      "language": "en",
+      "expectedCategory": "account",
+      "predictedCategory": "account",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 17009,
+      "tokens": 3016
+    },
+    {
+      "caseId": "E15",
+      "language": "hinglish",
+      "expectedCategory": "account",
+      "predictedCategory": "account",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 15547,
+      "tokens": 3144
+    },
+    {
+      "caseId": "E16",
+      "language": "en",
+      "expectedCategory": "account",
+      "predictedCategory": "account",
+      "expectedEscalate": false,
+      "escalated": true,
+      "reasons": [
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 6860,
+      "tokens": 1531
+    },
+    {
+      "caseId": "E17",
+      "language": "en",
+      "expectedCategory": "account",
+      "predictedCategory": "account",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "enterprise_customer"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 24577,
+      "tokens": 1950
+    },
+    {
+      "caseId": "E18",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "legal_threat",
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 11073,
+      "tokens": 2805
+    },
+    {
+      "caseId": "E19",
+      "language": "hinglish",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "legal_threat"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 17613,
+      "tokens": 3262
+    },
+    {
+      "caseId": "E20",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "abusive_language"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 10362,
+      "tokens": 2084
+    },
+    {
+      "caseId": "E21",
+      "language": "hinglish",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "abusive_language"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 13933,
+      "tokens": 2736
+    },
+    {
+      "caseId": "E22",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 12812,
+      "tokens": 2881
+    },
+    {
+      "caseId": "E23",
+      "language": "en",
+      "expectedCategory": "other",
+      "predictedCategory": "other",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "unclassified",
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 6113,
+      "tokens": 1309
+    },
+    {
+      "caseId": "E24",
+      "language": "hinglish",
+      "expectedCategory": "other",
+      "predictedCategory": "other",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "unclassified",
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 3892,
+      "tokens": 1044
+    },
+    {
+      "caseId": "E25",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": true,
+      "escalated": true,
+      "reasons": [
+        "enterprise_customer",
+        "agent_requested_escalation"
+      ],
+      "drafted": false,
+      "violations": [],
+      "latencyMs": 14227,
+      "tokens": 2127
+    },
+    {
+      "caseId": "E26",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 17296,
+      "tokens": 3074
+    },
+    {
+      "caseId": "E27",
+      "language": "en",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 99582,
+      "tokens": 5682
+    },
+    {
+      "caseId": "E28",
+      "language": "hi",
+      "expectedCategory": "order",
+      "predictedCategory": "order",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 101481,
+      "tokens": 4119
+    },
+    {
+      "caseId": "E29",
+      "language": "hi",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 30635,
+      "tokens": 3322
+    },
+    {
+      "caseId": "E30",
+      "language": "en",
+      "expectedCategory": "billing",
+      "predictedCategory": "billing",
+      "expectedEscalate": false,
+      "escalated": false,
+      "reasons": [],
+      "drafted": true,
+      "violations": [],
+      "latencyMs": 29295,
+      "tokens": 3130
+    }
+  ],
+  "id": "6af2185e66f5f3fe989dec22",
+  "source": "Exported unchanged from the live Evals tab (GET /api/evals/runs/:id) on 2026-11-19."
+}
