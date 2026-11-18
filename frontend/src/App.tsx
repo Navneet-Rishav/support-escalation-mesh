@@ -8,6 +8,7 @@ import { QueuePage } from './pages/QueuePage';
 import { TicketPage } from './pages/TicketPage';
 import { EvalsPage } from './pages/EvalsPage';
 import { SubmitPage } from './pages/SubmitPage';
+import { WakeBanner } from './components/WakeBanner';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -29,6 +30,8 @@ function SubmitRoute() {
 
 export function App() {
   return (
+    <>
+    <WakeBanner />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/submit" element={<SubmitRoute />}>
@@ -57,5 +60,6 @@ export function App() {
         }
       />
     </Routes>
+    </>
   );
 }

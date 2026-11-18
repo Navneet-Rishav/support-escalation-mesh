@@ -12,7 +12,7 @@
 
 ### At a glance
 
-- **Tests:** 75 backend tests (Vitest + Supertest against an in-memory MongoDB) and 12 frontend tests. Run them with `npm test`.
+- **Tests:** 75 backend tests (Vitest + Supertest against an in-memory MongoDB) and 13 frontend tests. Run them with `npm test`.
 - **Evals (30 labelled tickets, one run, 10 Nov 2026):** Sarvam `sarvam-105b`, prompt v1 → routing **100%** (30/30), escalation precision / recall **92.3% / 100%**, **0%** draft policy violations, p95 latency 99.6 s. A small set; details in [Eval results](#eval-results).
 
 ### Key design decisions
@@ -74,7 +74,7 @@ All decisions and alternatives: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 **Testing and CI**
 - **75 backend tests** (Vitest + Supertest) against a real in-memory MongoDB: auth, roles, validation, intake, the worker (atomic claim, retries, stale recovery, rule-based fallback on 402/timeout/5xx with guardrails still applied), the graph, guardrails, the Sarvam client (mocked HTTP), and eval metrics.
-- **12 frontend tests** (Vitest + Testing Library) plus typecheck, lint and build.
+- **13 frontend tests** (Vitest + Testing Library) plus typecheck, lint and build.
 - GitHub Actions runs everything on each push, plus a Docker image build. CI never calls a paid API.
 
 ## Architecture
