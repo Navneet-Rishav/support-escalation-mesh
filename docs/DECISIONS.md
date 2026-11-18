@@ -110,6 +110,26 @@ If Sarvam is **unavailable** (402 out of credits, or a timeout, network error, 4
 - **Evals never fall back**: they measure the model, so a provider error is recorded as an error.
 - Alternatives considered: switching the whole deployment to the fake provider (loses the real AI whenever it is available, and is easy to forget to switch back); marking tickets `failed` for a human (the old behaviour, safe but gives the agent nothing to work with); a second paid LLM provider (costs money, more keys to manage).
 
+How a ticket moves through triage, including the fallback (from `backend/src/services/triage.ts`):
+
+```mermaid
+flowchart TD
+  N[new] -->|worker claims it atomically, attempts + 1| T[triaging]
+  T --> S{Triage graph with Sarvam}
+  S -->|ok| P{Policy check: code}
+  S -->|"402 out of credits, timeout, network error, or 429/5xx after 2 retries"| F["Log ai_unavailable step, re-run the same graph with the keyword baseline (triage.mode = rule_based)"]
+  F --> P
+  S -->|"non-retryable error: bad request, bad key, or invalid JSON twice"| R{"fewer than 3 attempts?"}
+  F -->|error| R
+  R -->|yes| N
+  R -->|no| X[failed]
+  P -->|"legal, abuse, high value, refund over the agent limit, ..."| E["escalated (no AI draft)"]
+  P -->|otherwise| A["awaiting_review (draft waits for a human)"]
+  T -.->|"stuck for over 2 min (worker crashed)"| N
+```
+
+Malformed model output is deliberately **not** a fallback trigger: the JSON is validated with Zod and retried once with the error message; if it is still invalid, that is a prompt or model problem, so it goes through retry → `failed` where it is visible.
+
 ## 17. Triage latency knobs
 
 With `sarvam-105b` at the API's default reasoning, the v1 eval averaged ~26 s per ticket (p95 ~100 s), almost all of it reasoning tokens across 3 LLM calls (classify, specialist, draft). Reasoning tokens also count toward `max_tokens`. Two settings, both configurable so they can be measured rather than assumed:
