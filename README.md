@@ -8,6 +8,24 @@
 > **API:** https://support-escalation-mesh-api.onrender.com/healthz (Render free tier: the first request after 15 idle minutes can take up to a minute).
 > Run it locally in 3 commands: see [Local setup](#local-setup).
 
+**Problem:** support teams want AI to speed up replies, but can't let a model issue refunds or answer legal threats on its own.
+
+### At a glance
+
+- **Tests:** 75 backend tests (Vitest + Supertest against an in-memory MongoDB) and 12 frontend tests. Run them with `npm test`.
+- **Evals (30 labelled tickets, one run, 10 Nov 2026):** Sarvam `sarvam-105b`, prompt v1 → routing **100%** (30/30), escalation precision / recall **92.3% / 100%**, **0%** draft policy violations, p95 latency 99.6 s. A small set; details in [Eval results](#eval-results).
+
+### Key design decisions
+
+- **The LLM proposes, code decides:** refund limits, SLA timers and mandatory escalation (legal, abuse, high value) are plain code, not prompts. [Why →](docs/DECISIONS.md#5-the-llm-proposes-code-decides)
+- **Every reply needs human approval;** escalated tickets get no AI draft at all. [Why →](docs/DECISIONS.md#7-every-reply-needs-human-approval)
+- **The queue lives in MongoDB** with an atomic claim, so there's no Redis to run. [Why →](docs/DECISIONS.md#10-the-queue-lives-in-mongodb)
+- **Rule-based fallback** when the AI API is down or out of credits, behind one provider interface with a fake provider for tests (§9). [Why →](docs/DECISIONS.md#16-rule-based-fallback-when-the-ai-is-unavailable)
+- **Evals are built into the product,** so prompt or model versions can be compared side by side. [Why →](docs/DECISIONS.md#13-evals-built-into-the-product)
+
+All decisions and alternatives: [docs/DECISIONS.md](docs/DECISIONS.md).
+
+
 | Agent queue | Ticket review (AI draft + reasoning trail) |
 |---|---|
 | ![Queue](docs/screenshots/queue-desktop.png) | ![Ticket](docs/screenshots/ticket-desktop.png) |
